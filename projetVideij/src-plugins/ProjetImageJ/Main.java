@@ -39,16 +39,7 @@ public class Main {
                     byte[] pixels = (byte[]) ip.getPixels();
                     int height = ip.getHeight();
                     int width = ip.getWidth();
-                    for (int j = 0; j < height; j++) {
-                        for (int k = 0; k < width; k++) {
-                            int pix = pixels[i * width + k] & 0xff; //  conversio en int
-                            if (pix < 120) {
-                                pixels[j * width + k] = (byte) 0; // re-conversion en byte
-                            } else {
-                                pixels[j * width + k] = (byte) 255; // re-conversion en byte
-                            }
-                        }
-                    }
+
                 }
             }
         /*new ImageJ();
@@ -113,12 +104,6 @@ public class Main {
                     + " avec une distance de " + gap + " . " ) ;
         }
     }
-
-    public static void zoning (ImageProcessor ip){
-
-    }
-
-
 
 
 }
