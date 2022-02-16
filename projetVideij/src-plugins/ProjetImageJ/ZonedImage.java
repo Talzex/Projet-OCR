@@ -1,30 +1,29 @@
 package ProjetImageJ;
 
+import ij.WindowManager;
+import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
 import java.util.ArrayList;
 
 public class ZonedImage {
 
-    public ArrayList[] zoning(ImageProcessor ip){
+    public int[] zoning(ImageProcessor ip){
         int height = ip.getHeight();
         int width = ip.getWidth();
 
         ip = binarisation(ip);
-        ip.
         int[] V = new int[9];
-
+        int b=0;
         for (int i = 0; i < 3 ; i++){
             for (int j = 0; j < 3; j++){
-                ip.setRoi(width/3*i,height/3*j,width/3,height/3);
+                ip.setRoi((width/3)*j,(height/3)*i,width/3,height/3);
                 ImageProcessor bloc = ip.crop();
-
+                V[b] = blackInBloc(bloc);
+                b++;
             }
         }
-
-
-
-        return null;
+        return V;
     }
 
     public ImageProcessor binarisation(ImageProcessor ip){
@@ -42,8 +41,26 @@ public class ZonedImage {
                 }
             }
         }
+        ByteProcessor binarised_pixels = new ByteProcessor(width,height,pixels);
 
-        return pixels;
+        return binarised_pixels.crop();
+    }
+
+    public int blackInBloc(ImageProcessor ip){
+        byte[] pixels = (byte[]) ip.getPixels();
+        int height = ip.getHeight();
+        int width = ip.getWidth();
+
+        int nbBlack = 0;
+        for (int j = 0; j < height; j++) {
+            for (int k = 0; k < width; k++) {
+                int pix = pixels[j * width + k] & 0xff; //  conversion en int
+                if (pix == 0) {
+                    nbBlack += 1;
+                }
+            }
+        }
+        return nbBlack;
     }
 
 }

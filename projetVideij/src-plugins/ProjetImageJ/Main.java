@@ -13,6 +13,7 @@ import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 
 import java.io.File;
+import java.util.Arrays;
 
 /**
  *
@@ -27,7 +28,7 @@ public class Main {
         return files ;
     }
     public static void main(String[] args) {
-        String path = "/mnt/roost/users/tduthil/S4/S4_Image/projetOCR/baseProjetOCR/";
+        /*String path = "/mnt/roost/users/tduthil/S4/S4_Image/projetOCR/baseProjetOCR/";
         File[] files = listFiles(path);
         if (files != null) {
             for (int i = 0; i < files.length; i++) {
@@ -41,16 +42,20 @@ public class Main {
                     int width = ip.getWidth();
 
                 }
-            }
-        /*new ImageJ();
-        ImagePlus image = IJ.openImage("/mnt/roost/users/tduthil/S4/S4_Image/projetOCR/baseProjetOCR/2_8.png");
-        IJ.showMessage("Accès à ImageJ depuis le code source");
-        image.show();
-        WindowManager.addWindow(image.getWindow());
-        closetImage(ip);
-        System.out.println(meanImage(ip));*/
+            }*/
+        // lance l ’ interface d ’ imageJ
+        new ImageJ () ;
+        ImagePlus image = IJ.openImage ( "/mnt/roost/users/augcolas/Documents/OCR/baseProjetOCR/1_1.png");
 
-        }
+        new ImageConverter(image).convertToGray8();
+        ImageProcessor ip = image.getProcessor();
+        ZonedImage img = new ZonedImage();
+        ImageProcessor imageBin = img.binarisation(ip);
+        ImagePlus imp = new ImagePlus("Result", imageBin);
+        int V[] = new int [9];
+        V = img.zoning(ip);
+        System.out.println(Arrays.toString(V));
+        imp.show();
     }
 
     public static double meanImage(ImageProcessor ip){
@@ -59,7 +64,7 @@ public class Main {
         int width = ip.getWidth();
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                int pix = pixels[i * width + j] & 0xff; //  conversio en int
+                int pix = pixels[i * width + j] & 0xff; //  conversion en int
                 if (pix < 120) {
                     pixels[i * width + j] = (byte) 0; // re-conversion en byte
                 } else {
