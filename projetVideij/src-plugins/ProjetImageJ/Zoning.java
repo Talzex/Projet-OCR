@@ -6,7 +6,7 @@ import ij.process.ImageProcessor;
 
 import java.util.ArrayList;
 
-public class ZonedImage {
+public class Zoning {
 
     public int[] zoning(ImageProcessor ip){
         int height = ip.getHeight();

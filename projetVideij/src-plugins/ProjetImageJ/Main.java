@@ -8,7 +8,6 @@ package ProjetImageJ;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
-import ij.WindowManager;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 
@@ -28,7 +27,7 @@ public class Main {
         return files ;
     }
     public static void main(String[] args) {
-        /*String path = "/mnt/roost/users/tduthil/S4/S4_Image/projetOCR/baseProjetOCR/";
+        /*String path = "/mnt/roost/users/augcolas/S4/S4_Image/projetOCR/baseProjetOCR/";
         File[] files = listFiles(path);
         if (files != null) {
             for (int i = 0; i < files.length; i++) {
@@ -43,13 +42,13 @@ public class Main {
 
                 }
             }*/
-        // lance l ’ interface d ’ imageJ
+        // lance l’interface d’imageJ
         new ImageJ () ;
-        ImagePlus image = IJ.openImage ( "/mnt/roost/users/augcolas/Documents/OCR/baseProjetOCR/1_1.png");
+        ImagePlus image = IJ.openImage ( "/mnt/roost/users/augcolas/Documents/OCR/baseProjetOCR/1/1_1.png");
 
         new ImageConverter(image).convertToGray8();
         ImageProcessor ip = image.getProcessor();
-        ZonedImage img = new ZonedImage();
+        Zoning img = new Zoning();
         ImageProcessor imageBin = img.binarisation(ip);
         ImagePlus imp = new ImagePlus("Result", imageBin);
         int V[] = new int [9];
