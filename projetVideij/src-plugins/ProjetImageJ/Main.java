@@ -6,108 +6,178 @@
 package ProjetImageJ;
 
 import ij.IJ;
-import ij.ImageJ;
 import ij.ImagePlus;
+import ij.WindowManager;
 import ij.process.ImageConverter;
-import ij.process.ImageProcessor;
-
 import java.io.File;
-import java.util.Arrays;
+import java.io.IOException;
+import java.util.ArrayList;
 
-/**
- *
- * @author nicholasjournet
- */
+
 public class Main {
 
+    /**
+     * Valeur de redimension d'une image (en pixels)
+     */
+    private static final int valeurRedimension = 20;
+    /**
+     * Matrice de confusion
+     */
+    public static int[][] matricedeconfusion;
+
+    /**
+     * Chemin vers nos images de base
+     */
+    private static final String pathToImages = "..\\baseProjetOCR";
+    /**
+     * Images
+     */
+    public static ArrayList<ImagePlus> images;
+
+    /**
+     *  Récupère les fichiers dans le répertoire, ici nos images
+     * @param directoryPath, le chemin vers le répertoire
+     * @return un tableau de fichiers à étudier
+     */
     public static File[] listFiles (String directoryPath ) {
         File [] files = null ;
-        File directoryToScan = new File ( directoryPath ) ;
-        files = directoryToScan . listFiles () ;
+        File directoryToScan = new File(directoryPath);
+        files = directoryToScan.listFiles ();
         return files ;
     }
-    public static void main(String[] args) {
-        /*String path = "/mnt/roost/users/augcolas/S4/S4_Image/projetOCR/baseProjetOCR/";
-        File[] files = listFiles(path);
-        if (files != null) {
-            for (int i = 0; i < files.length; i++) {
-                if (!files[i].isHidden()) {
-                    String filePath = files[i].getAbsolutePath();
-                    ImagePlus Img = new ImagePlus(filePath);
-                    new ImageConverter(Img).convertToGray8();
-                    ImageProcessor ip = Img.getProcessor();
-                    byte[] pixels = (byte[]) ip.getPixels();
-                    int height = ip.getHeight();
-                    int width = ip.getWidth();
 
+    /**
+     * Méthode permettant de traiter au mieux les image, pour améliorer leur reconnaissance
+     * @param files, un tableau de l'ensemble des fichiers images
+     */
+    private static void TraitementImage(File[] files) {
+        images = new ArrayList<>();
+        for (File file : files) {
+            if (!file.isHidden()) {
+                // Ouvrir en tant qu'image
+                String imageFilePath = file.getAbsolutePath();
+                ImagePlus imp = IJ.openImage(imageFilePath);
+                new ImageConverter(imp).convertToGray8();
+                Utils.binarisation(imp.getProcessor());
+                //Utils.dilatation(imp.getProcessor(),true);
+                //Utils.dilatation(imp.getProcessor(),false);
+                imp.getProcessor().dilate();
+                imp.getProcessor().erode();
+                images.add(imp);
+                if(imp.getTitle().equals("7_7.jpg")){
+                    imp.show();
+                    WindowManager.addWindow(imp.getWindow());
                 }
-            }*/
-        // lance l’interface d’imageJ
-        new ImageJ () ;
-        ImagePlus image = IJ.openImage ( "/mnt/roost/users/augcolas/Documents/OCR/baseProjetOCR/1/1_1.png");
-
-        new ImageConverter(image).convertToGray8();
-        ImageProcessor ip = image.getProcessor();
-        Zoning img = new Zoning();
-        ImageProcessor imageBin = img.binarisation(ip);
-        ImagePlus imp = new ImagePlus("Result", imageBin);
-        int V[] = new int [9];
-        V = img.zoning(ip);
-        System.out.println(Arrays.toString(V));
-        imp.show();
-    }
-
-    public static double meanImage(ImageProcessor ip){
-        byte[] pixels = (byte[]) ip.getPixels();
-        int height = ip.getHeight();
-        int width = ip.getWidth();
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                int pix = pixels[i * width + j] & 0xff; //  conversion en int
-                if (pix < 120) {
-                    pixels[i * width + j] = (byte) 0; // re-conversion en byte
-                } else {
-                    pixels[i * width + j] = (byte) 255; // re-conversion en byte
+                if(imp.getTitle().equals("3_5.jpg")){
+                    imp.show();
+                    WindowManager.addWindow(imp.getWindow());
                 }
+
             }
         }
-        double somme = 0;
-        for( int i = 0; i < pixels.length; i++) {
-            somme += pixels[i] & 0xff;
-        }
-        return somme/pixels.length;
     }
 
 
-
-    public  static void closetImage(ImageProcessor ip){
-        String path = "/mnt/roost/users/tduthil/S4/S4_Image/projetOCR/baseProjetOCR/";
-        File[] files = listFiles(path);
-        if (files != null){
-            double gap = Double.MAX_VALUE;
-            int min = 0;
-            for (int i=0; i < files.length; i++){
-                if (!files[i].isHidden()){
-                    //Création d'une image temporaire
-                    String filePath = files[i].getAbsolutePath();
-                    ImagePlus tempImg = new ImagePlus(filePath);
-                    new ImageConverter(tempImg).convertToGray8();
-                    ImageProcessor ipTemp = tempImg.getProcessor();
-                    // Calcul du niveau de gris moyen de l'image
-                    double avgTemp = meanImage(ipTemp);
-                    // Différence par rapport à l'image d'origine
-                    double dif = Math.abs(meanImage(ip) - avgTemp);
-                    if (dif < gap){
-                        gap = dif;
-                        min = i;
+    public static void main(String[] args) throws IOException {
+        int correct = 0;
+        matricedeconfusion = new int[10][10];
+        File[] files = listFiles(pathToImages);
+        if(files != null){
+            Utils.resizeImage(files, valeurRedimension);
+            files = listFiles(Utils.pathToCroppedImages);
+            TraitementImage(files);
+            if(images != null && !images.isEmpty()){
+                for (ImagePlus image : images) {
+                    System.out.println("Image " + image.getTitle() + " : ");
+                    // Zoning => Algorithme Zoning, Profile => Algorithme Profile
+                    int resultat = Algorithm(image,"Zoning");
+                    System.out.print("Le chiffre correspondant est : " + resultat);
+                    int valeur = Integer.parseInt(image.getTitle().split("_")[0]);
+                    // Comparaison entre le resultat de l'algo et valeur correcte
+                    if(resultat == valeur) {
+                        correct++;
+                        System.out.println(", c'est juste");
+                        System.out.println();
+                    } else {
+                        System.out.println(", c'est faux");
+                        System.out.println();
                     }
+                    matricedeconfusion[resultat][valeur] += 1;
                 }
+
+            } else {
+                System.out.println("Recuperation incomplete : repertoire des images redimensionner non trouve ou aucune image trouve");
             }
-            String closetImageName =files[min].getName();
-            IJ.showMessage( " L ’ image la plus proche est " + closetImageName
-                    + " avec une distance de " + gap + " . " ) ;
+        } else {
+            System.out.println("Recuperation incomplete : repertoire des images non trouve");
+        }
+        showMatrice(correct);
+
+    }
+
+    /**
+     * @param imagePlus
+     * @param algo
+     * @return
+     */
+    private static int Algorithm(ImagePlus imagePlus,String algo) {
+        switch (algo){
+            case "Zoning":
+                System.out.println("Zoning");
+                return ImagetoNumber(Zoning.closetImageZoning(imagePlus));
+            case "Profil":
+                System.out.println("Profil");
+                return ImagetoNumber(Profil.closetImageProfile(imagePlus));
+            default:
+                System.out.println("Algorithme Inconnu");
+                return -1;
         }
     }
 
+    /**
+     * Méthode permettant d'extraire le chiffre par rapport à notre image
+     * @param imagePlus, l'image
+     * @return, le chiffre de l'image
+     */
+    private static int ImagetoNumber(ImagePlus imagePlus){
+        String closestImageName;
+        if(imagePlus != null){
+            closestImageName = imagePlus.getTitle();
+        } else {
+            closestImageName = "";
+        }
+        System.out.println("\tImage trouve : " + closestImageName);
+        return Integer.parseInt(closestImageName.split("_")[0]);
+    }
 
+
+    /**
+     * Affiche la matrice
+     * @param correct le nombre d'image correctement identifiée
+     */
+    private static void showMatrice(int correct) {
+        String message ="";
+        for (int k = 0; k < matricedeconfusion.length; k++){
+            if(k == 9) {
+                System.out.print("     " + k + "\n");
+            } else {
+                System.out.print("     "+k);
+            }
+        }
+        message += "-------------------------------------------------------------\n";
+        for (int i = 0; i < matricedeconfusion.length; i++) {
+            message += i + " | ";
+            for (int j = 0; j < matricedeconfusion.length; j++) {
+                if (j == 0) message += matricedeconfusion[i][j] > 9 ? matricedeconfusion[i][j] : " " + matricedeconfusion[i][j];
+                else
+                    message += matricedeconfusion[i][j] > 9 ? "    " + matricedeconfusion[i][j] : "     " + matricedeconfusion[i][j];
+            }
+            message += "\n";
+        }
+
+
+        float pourcentage = (correct*100)/(matricedeconfusion.length*matricedeconfusion.length);
+        message += "Reconnaissance " + pourcentage + "%";
+        System.out.println(message);
+    }
 }
