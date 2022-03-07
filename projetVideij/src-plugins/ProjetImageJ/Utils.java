@@ -2,23 +2,17 @@ package ProjetImageJ;
 
 import ij.IJ;
 import ij.ImagePlus;
-import ij.WindowManager;
 import ij.process.ImageProcessor;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
 public class Utils {
-
-
     /**
-     * Le chemin vers les images apres redimension
+     * Chemin vers nos images de base
      */
-    public static final String pathToCroppedImages = "..\\ResizedImages";
-
-
+    public static final String pathToImagesRedimension = "..\\ImagesRedimension";
     /**
      * Transforme l'image en noir et blanc => Binarisation (noir ou blanc)
      * @param ip, le processeur de l'image à binariser
@@ -33,37 +27,6 @@ public class Utils {
                     ip.putPixel(j,k,0);
                 } else {
                     ip.putPixel(j,k,255);
-                }
-            }
-        }
-    }
-
-    public static void dilatation(ImageProcessor ip, boolean flag) {
-        int height = ip.getHeight();
-        int width = ip.getWidth();
-        int targetValue = (flag == true)?0:255;
-
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                if (ip.getPixel(i, j) == targetValue) {
-                    for (int ti = i - 1; ti <= i + 1; ti++) {
-                        for (int tj = j - 1; tj <= j + 1; tj++) {
-                            if (ti >= 0 && ti < width && tj >= 0 && tj < height){
-                                if (ti != 0 && tj != 0) {
-                                    ip.putPixel(ti, tj, 160);
-                                }
-                            }
-
-                        }
-                    }
-                }
-
-            }
-        }
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                if (ip.getPixel(i, j) == 160) {
-                    ip.putPixel(i, j, targetValue);
                 }
             }
         }
@@ -89,9 +52,8 @@ public class Utils {
                     ip.setInterpolationMethod(ImageProcessor.BILINEAR);
                     ip = ip.resize(targetSize,targetSize);
                     BufferedImage croppedImage = ip.getBufferedImage();
-                    new File(pathToCroppedImages).mkdirs();
-                    ImageIO.write(croppedImage,"jpg",new File(pathToCroppedImages + "\\" + newName));
-
+                    new File(pathToImagesRedimension).mkdirs();
+                    ImageIO.write(croppedImage,"jpg",new File(pathToImagesRedimension + "\\" + newName));
                 }
             }
 

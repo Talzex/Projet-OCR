@@ -7,7 +7,6 @@ package ProjetImageJ;
 
 import ij.IJ;
 import ij.ImagePlus;
-import ij.WindowManager;
 import ij.process.ImageConverter;
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +28,7 @@ public class Main {
      * Chemin vers nos images de base
      */
     private static final String pathToImages = "..\\baseProjetOCR";
+
     /**
      * Images
      */
@@ -54,88 +54,20 @@ public class Main {
         images = new ArrayList<>();
         for (File file : files) {
             if (!file.isHidden()) {
-                // Ouvrir en tant qu'image
                 String imageFilePath = file.getAbsolutePath();
                 ImagePlus imp = IJ.openImage(imageFilePath);
                 new ImageConverter(imp).convertToGray8();
                 Utils.binarisation(imp.getProcessor());
-                //Utils.dilatation(imp.getProcessor(),true);
-                //Utils.dilatation(imp.getProcessor(),false);
                 imp.getProcessor().dilate();
                 imp.getProcessor().erode();
                 images.add(imp);
-                if(imp.getTitle().equals("7_7.jpg")){
-                    imp.show();
-                    WindowManager.addWindow(imp.getWindow());
-                }
-                if(imp.getTitle().equals("3_5.jpg")){
-                    imp.show();
-                    WindowManager.addWindow(imp.getWindow());
-                }
-
             }
         }
-    }
-
-
-    public static void main(String[] args) throws IOException {
-        int correct = 0;
-        matricedeconfusion = new int[10][10];
-        File[] files = listFiles(pathToImages);
-        if(files != null){
-            Utils.resizeImage(files, valeurRedimension);
-            files = listFiles(Utils.pathToCroppedImages);
-            TraitementImage(files);
-            if(images != null && !images.isEmpty()){
-                for (ImagePlus image : images) {
-                    System.out.println("Image " + image.getTitle() + " : ");
-                    // Zoning => Algorithme Zoning, Profile => Algorithme Profile
-                    int resultat = Algorithm(image,"Zoning");
-                    System.out.print("Le chiffre correspondant est : " + resultat);
-                    int valeur = Integer.parseInt(image.getTitle().split("_")[0]);
-                    // Comparaison entre le resultat de l'algo et valeur correcte
-                    if(resultat == valeur) {
-                        correct++;
-                        System.out.println(", c'est juste");
-                        System.out.println();
-                    } else {
-                        System.out.println(", c'est faux");
-                        System.out.println();
-                    }
-                    matricedeconfusion[resultat][valeur] += 1;
-                }
-
-            } else {
-                System.out.println("Recuperation incomplete : repertoire des images redimensionner non trouve ou aucune image trouve");
-            }
-        } else {
-            System.out.println("Recuperation incomplete : repertoire des images non trouve");
-        }
-        showMatrice(correct);
 
     }
 
     /**
-     * @param imagePlus
-     * @param algo
-     * @return
-     */
-    private static int Algorithm(ImagePlus imagePlus,String algo) {
-        switch (algo){
-            case "Zoning":
-                System.out.println("Zoning");
-                return ImagetoNumber(Zoning.closetImageZoning(imagePlus));
-            case "Profil":
-                System.out.println("Profil");
-                return ImagetoNumber(Profil.closetImageProfile(imagePlus));
-            default:
-                System.out.println("Algorithme Inconnu");
-                return -1;
-        }
-    }
-
-    /**
-     * Méthode permettant d'extraire le chiffre par rapport à notre image
+     * Méthode permettant d'extraire le chiffre par rapport à notre image reconnu
      * @param imagePlus, l'image
      * @return, le chiffre de l'image
      */
@@ -146,10 +78,35 @@ public class Main {
         } else {
             closestImageName = "";
         }
-        System.out.println("\tImage trouve : " + closestImageName);
+        System.out.println("Image trouve : " + closestImageName);
         return Integer.parseInt(closestImageName.split("_")[0]);
     }
 
+    /**
+     * Méthode permettant d'appeler en fonction du nom de l'algorithme celui-ci.
+     * @param imagePlus, l'image à traiter avec les algorithme
+     * @param algo, le nom de l'algorithme que l'on souhaite utiliser
+     * @return un entier, qui est le nombre que l'algorithme à reconnu
+     */
+    private static int Algorithm(ImagePlus imagePlus,String algo) {
+        switch (algo){
+            case "Zoning":
+                return ImagetoNumber(Zoning.closetImageZoning(imagePlus));
+            case "Profil":
+                return ImagetoNumber(Profil.closetImageProfile(imagePlus));
+            default:
+                System.out.println("Algorithme Inconnu");
+                return -1;
+        }
+    }
+
+    /** Calcule, le taux de reconnaissance
+     * @param correct, le nombre d'image correctement reconnue
+     * @return le taux de reconnaissance
+     */
+    private static float TauxReconnaissance(int correct) {
+        return (correct*100)/(matricedeconfusion.length*matricedeconfusion.length);
+    }
 
     /**
      * Affiche la matrice
@@ -168,16 +125,54 @@ public class Main {
         for (int i = 0; i < matricedeconfusion.length; i++) {
             message += i + " | ";
             for (int j = 0; j < matricedeconfusion.length; j++) {
-                if (j == 0) message += matricedeconfusion[i][j] > 9 ? matricedeconfusion[i][j] : " " + matricedeconfusion[i][j];
-                else
-                    message += matricedeconfusion[i][j] > 9 ? "    " + matricedeconfusion[i][j] : "     " + matricedeconfusion[i][j];
+                if(j==0){
+                    if(matricedeconfusion[i][j] > 9){
+                        message += matricedeconfusion[i][j];
+                    } else {
+                        message += " " + matricedeconfusion[i][j];
+                    }
+                } else {
+                    if(matricedeconfusion[i][j] > 9){
+                        message += "    " + matricedeconfusion[i][j];
+                    } else {
+                        message += "     " + matricedeconfusion[i][j];
+                    }
+                }
             }
             message += "\n";
         }
-
-
-        float pourcentage = (correct*100)/(matricedeconfusion.length*matricedeconfusion.length);
-        message += "Reconnaissance " + pourcentage + "%";
+        message += "Reconnaissance " + TauxReconnaissance(correct) + "%";
         System.out.println(message);
+    }
+
+    public static void main(String[] args) throws IOException {
+        int correct = 0;
+        matricedeconfusion = new int[10][10];
+        File[] files = listFiles(pathToImages);
+        if(files != null){
+            Utils.resizeImage(files, valeurRedimension);
+            files = listFiles(Utils.pathToImagesRedimension);
+            TraitementImage(files);
+            // Zoning => Algorithme Zoning
+            // Profile => Algorithme Profile
+            String algoChoisie = "Profil";
+            System.out.println(algoChoisie);
+            if(images != null && !images.isEmpty()){
+                for (ImagePlus image : images) {
+                    System.out.print("Image " + image.getTitle() + " : ");
+                    int resultat = Algorithm(image,algoChoisie);
+                    int valeur = Integer.parseInt(image.getTitle().split("_")[0]);
+                    if(resultat == valeur) {
+                        correct++;
+                    }
+                    matricedeconfusion[resultat][valeur] += 1;
+                }
+            } else {
+                System.out.println("Recuperation incomplete : repertoire des images redimensionner non trouve ou aucune image trouve");
+            }
+        } else {
+            System.out.println("Recuperation incomplete : repertoire des images non trouve");
+        }
+        showMatrice(correct);
     }
 }
